@@ -2,73 +2,274 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Cek SEO dari HTML</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SEO Score Checker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 700px;
-      margin: 40px auto;
-      padding: 0 20px;
+    :root {
+      --green: #27ae60;
+      --gray-bg: #f0f4f8;
+      --card-bg: #ffffff;
+      --text-color: #333;
     }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom right, #e0f7fa, #f0f4f8);
+      color: var(--text-color);
+    }
+
+    header {
+      background-color: #ffffffee;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 16px 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 20px 40px;
+    }
+
     h1 {
       text-align: center;
       color: #2c3e50;
+      margin-bottom: 30px;
     }
+
     textarea {
       width: 100%;
-      height: 300px;
+      height: 280px;
       font-family: monospace;
       font-size: 14px;
-      padding: 12px;
-      margin-bottom: 12px;
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      resize: vertical;
+      box-shadow: inset 0 1px 3px #ddd;
+      background: #fff;
     }
+
     button {
-      padding: 12px 20px;
+      display: inline-block;
+      padding: 14px 28px;
       font-size: 16px;
-      background-color: #2980b9;
+      font-weight: 600;
+      background-color: var(--green);
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 30px;
       cursor: pointer;
+      transition: background-color 0.3s ease;
     }
-    .result {
-      background: #f0f0f0;
-      margin-top: 20px;
-      padding: 15px;
-      border-radius: 6px;
+
+    button:hover:not(:disabled) {
+      background-color: #1f9e50;
     }
-    .spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid #ccc;
-      border-top-color: #27ae60;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+
+    button:disabled {
+      background-color: #a0a0a0;
+      cursor: not-allowed;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+
+    #result {
+      margin-top: 30px;
+    }
+
+    .loading {
+      text-align: center;
+      font-weight: 600;
+      color: #666;
+    }
+
+    .progress-container {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      margin: 0 auto 25px;
+    }
+
+    .progress-circle {
+      stroke-linecap: round;
+      stroke-width: 12;
+      fill: none;
+      stroke: #ddd;
+    }
+
+    .progress-bar {
+      stroke: var(--green);
+      stroke-linecap: round;
+      stroke-width: 12;
+      fill: none;
+      transition: stroke-dashoffset 0.7s ease;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    .progress-text {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 32px;
+      color: var(--green);
+    }
+
+    .cards {
+      display: grid;
+      gap: 15px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 18px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      transition: transform 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+    }
+
+    .icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .success {
+      color: #27ae60;
+    }
+
+    .warning {
+      color: #e67e22;
+    }
+
+    .error {
+      color: #e74c3c;
+    }
+
+    .card-content {
+      flex: 1;
+    }
+
+    .card-content strong {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #777;
     }
   </style>
+  <!-- jsPDF CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-  <h1>SEO Score Chacker</h1>
-  <textarea id="htmlInput" placeholder="Tempelkan kode HTML di sini..."></textarea>
-  <button onclick="analyzeHTML()">Cek Skor SEO</button>
 
-  <div id="result" class="result"></div>
+  <header>
+    <h1>SEO Score Checker</h1>
+  </header>
+
+  <div class="container">
+    <textarea id="htmlInput" placeholder="Tempelkan kode HTML di sini..."></textarea>
+
+    <div style="text-align:center; margin-top: 20px;">
+      <button id="checkBtn">Cek Skor SEO</button>
+      <button id="exportPdfBtn" disabled style="margin-left: 10px; background-color: #3498db;">Ekspor PDF</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
 
   <script>
-    async function analyzeHTML() {
-      const html = document.getElementById('htmlInput').value.trim();
-      const resultDiv = document.getElementById('result');
+    const btn = document.getElementById('checkBtn');
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
+    const resultDiv = document.getElementById('result');
 
+    function escapeHTML(text) {
+      const p = document.createElement('p');
+      p.textContent = text;
+      return p.innerHTML;
+    }
+
+    function icon(status) {
+      if (status === 'success') return '<span class="icon success">✅</span>';
+      if (status === 'warning') return '<span class="icon warning">⚠️</span>';
+      if (status === 'error') return '<span class="icon error">❌</span>';
+      return '';
+    }
+
+    function getStatus(condition) {
+      if (condition === true) return 'success';
+      if (condition === false) return 'error';
+      return 'warning';
+    }
+
+    function renderCard(title, value, status) {
+      return `
+        <div class="card ${status}">
+          ${icon(status)}
+          <div class="card-content">
+            <strong>${title}</strong>
+            <div>${value}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderProgressBar(score) {
+      const radius = 60;
+      const circumference = 2 * Math.PI * radius;
+      const offset = circumference - (score / 100) * circumference;
+      return `
+        <div class="progress-container" aria-label="SEO Score ${score} dari 100">
+          <svg width="140" height="140" role="img" aria-hidden="true">
+            <circle class="progress-circle" cx="70" cy="70" r="${radius}" />
+            <circle class="progress-bar" cx="70" cy="70" r="${radius}"
+              stroke-dasharray="${circumference}"
+              stroke-dashoffset="${offset}"></circle>
+          </svg>
+          <div class="progress-text">${score}</div>
+        </div>
+      `;
+    }
+
+    btn.addEventListener('click', async () => {
+      const html = document.getElementById('htmlInput').value.trim();
+      resultDiv.innerHTML = '';
+      exportPdfBtn.disabled = true; // Disable export sampai ada hasil
       if (!html) {
-        resultDiv.innerHTML = '<p style="color:red;">Masukkan kode HTML terlebih dahulu!</p>';
+        resultDiv.innerHTML = '<p style="color:red; text-align:center;">Masukkan kode HTML terlebih dahulu!</p>';
         return;
       }
 
-      resultDiv.innerHTML = `<p>Memproses... <span class="spinner"></span></p>`;
+      resultDiv.innerHTML = '<p class="loading">Memproses... ⏳</p>';
 
       try {
         const response = await fetch('http://localhost:3000/analyze-html', {
@@ -78,38 +279,73 @@
         });
 
         if (!response.ok) {
-          resultDiv.innerHTML = `<p style="color:red;">Server error: ${response.status} ${response.statusText}</p>`;
+          resultDiv.innerHTML = `<p style="color:red; text-align:center;">Server error: ${response.status} ${response.statusText}</p>`;
           return;
         }
 
         const data = await response.json();
 
         if (data.error) {
-          resultDiv.innerHTML = `<p style="color:red;">${data.error}</p>`;
+          resultDiv.innerHTML = `<p style="color:red; text-align:center;">${escapeHTML(data.error)}</p>`;
           return;
         }
 
-        resultDiv.innerHTML = `
-          <h3>Hasil Analisis SEO</h3>
-          <p><strong>Skor:</strong> ${data.score}/100</p>
-          <ul>
-            <li><strong>Title tag:</strong> ${data.detail.title ? `<span style="color:green;">Ada</span> — "${escapeHTML(data.detail.title)}"` : '<span style="color:red;">Tidak ada</span>'}</li>
-            <li><strong>Meta description:</strong> ${data.detail.metaDesc ? `<span style="color:green;">Ada</span> — "${escapeHTML(data.detail.metaDesc)}"` : '<span style="color:red;">Tidak ada</span>'}</li>
-            <li><strong>Jumlah H1:</strong> ${data.detail.h1}</li>
-            <li><strong>Gambar dengan alt:</strong> ${data.detail.imageAltRatio}</li>
-          </ul>
-        `;
-      } catch (err) {
-        resultDiv.innerHTML = '<p style="color:red;">Gagal menghubungi server</p>';
-      }
-    }
+        const score = data.score;
+        let htmlResult = renderProgressBar(score);
+        htmlResult += '<div class="cards">';
 
-    // Fungsi untuk escape karakter HTML agar aman ditampilkan
-    function escapeHTML(text) {
-      const p = document.createElement('p');
-      p.textContent = text;
-      return p.innerHTML;
-    }
+        htmlResult += renderCard('Title tag', data.detail.title ? `Ditemukan: "${escapeHTML(data.detail.title)}"` : 'Tidak ditemukan', getStatus(!!data.detail.title));
+        htmlResult += renderCard('Meta Description', data.detail.metaDesc ? `Ditemukan: "${escapeHTML(data.detail.metaDesc)}"` : 'Tidak ditemukan', getStatus(!!data.detail.metaDesc));
+        htmlResult += renderCard('Jumlah tag H1', data.detail.h1, data.detail.h1 === 1 ? 'success' : (data.detail.h1 === 0 ? 'error' : 'warning'));
+        htmlResult += renderCard('Gambar dengan atribut alt', data.detail.imageAltRatio, data.detail.imageAltRatioScore ? 'success' : 'error');
+        htmlResult += renderCard('Jumlah kata (body)', data.detail.wordCount, data.detail.wordCount >= 300 ? 'success' : 'warning');
+        htmlResult += renderCard('Canonical tag', data.detail.hasCanonical ? 'Ditemukan' : 'Tidak ditemukan', getStatus(data.detail.hasCanonical));
+        htmlResult += renderCard('Meta robots', escapeHTML(data.detail.robotsContent), data.detail.robotsContent.includes('index') ? 'success' : 'warning');
+        htmlResult += renderCard('Open Graph Title', data.detail.ogTitle ? 'Ditemukan' : 'Tidak ditemukan', getStatus(data.detail.ogTitle));
+        htmlResult += renderCard('Open Graph Image', data.detail.ogImage ? 'Ditemukan' : 'Tidak ditemukan', getStatus(data.detail.ogImage));
+        htmlResult += renderCard('Favicon', data.detail.hasFavicon ? 'Ditemukan' : 'Tidak ditemukan', getStatus(data.detail.hasFavicon));
+        htmlResult += renderCard('Inline CSS', data.detail.inlineCSS ? 'Ada' : 'Tidak ada', data.detail.inlineCSS ? 'warning' : 'success');
+        htmlResult += renderCard('Inline JavaScript', data.detail.inlineJS ? 'Ada' : 'Tidak ada', data.detail.inlineJS ? 'warning' : 'success');
+        htmlResult += renderCard('Link Internal', data.detail.internalLinks, data.detail.internalLinks > 0 ? 'success' : 'warning');
+        htmlResult += renderCard('Link Eksternal', data.detail.externalLinks, data.detail.externalLinks > 0 ? 'success' : 'warning');
+
+        htmlResult += '</div>';
+        resultDiv.innerHTML = htmlResult;
+
+        exportPdfBtn.disabled = false; // Enable export
+
+      } catch (error) {
+        resultDiv.innerHTML = `<p style="color:red; text-align:center;">Terjadi kesalahan: ${escapeHTML(error.message)}</p>`;
+      }
+    });
+
+    exportPdfBtn.addEventListener('click', () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const cards = resultDiv.querySelectorAll('.card');
+      const scoreText = resultDiv.querySelector('.progress-text')?.textContent || '';
+
+      let text = `Skor SEO: ${scoreText}\n\n`;
+
+      cards.forEach(card => {
+        const title = card.querySelector('strong')?.textContent || '';
+        const value = card.querySelector('.card-content div')?.textContent || '';
+        text += `${title}: ${value}\n`;
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      doc.setFontSize(18);
+      doc.text('Laporan SEO Score Checker', pageWidth / 2, 20, { align: 'center' });
+      doc.setFontSize(12);
+      doc.text(text, 15, 40);
+
+      doc.save('SEO_Score_Laporan.pdf');
+    });
   </script>
+
+  <footer class="footer">
+    &copy; 2025 SEO Score Checker by Tim PKL UPNVJT
+  </footer>
 </body>
 </html>
