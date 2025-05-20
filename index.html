@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cek SEO dari HTML</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    textarea {
+      width: 100%;
+      height: 300px;
+      font-family: monospace;
+      font-size: 14px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      background-color: #2980b9;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .result {
+      background: #f0f0f0;
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 6px;
+    }
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #ccc;
+      border-top-color: #27ae60;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>SEO Score Chacker</h1>
+  <textarea id="htmlInput" placeholder="Tempelkan kode HTML di sini..."></textarea>
+  <button onclick="analyzeHTML()">Cek Skor SEO</button>
+
+  <div id="result" class="result"></div>
+
+  <script>
+    async function analyzeHTML() {
+      const html = document.getElementById('htmlInput').value.trim();
+      const resultDiv = document.getElementById('result');
+
+      if (!html) {
+        resultDiv.innerHTML = '<p style="color:red;">Masukkan kode HTML terlebih dahulu!</p>';
+        return;
+      }
+
+      resultDiv.innerHTML = `<p>Memproses... <span class="spinner"></span></p>`;
+
+      try {
+        const response = await fetch('http://localhost:3000/analyze-html', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ html }),
+        });
+
+        if (!response.ok) {
+          resultDiv.innerHTML = `<p style="color:red;">Server error: ${response.status} ${response.statusText}</p>`;
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+          resultDiv.innerHTML = `<p style="color:red;">${data.error}</p>`;
+          return;
+        }
+
+        resultDiv.innerHTML = `
+          <h3>Hasil Analisis SEO</h3>
+          <p><strong>Skor:</strong> ${data.score}/100</p>
+          <ul>
+            <li><strong>Title tag:</strong> ${data.detail.title ? `<span style="color:green;">Ada</span> — "${escapeHTML(data.detail.title)}"` : '<span style="color:red;">Tidak ada</span>'}</li>
+            <li><strong>Meta description:</strong> ${data.detail.metaDesc ? `<span style="color:green;">Ada</span> — "${escapeHTML(data.detail.metaDesc)}"` : '<span style="color:red;">Tidak ada</span>'}</li>
+            <li><strong>Jumlah H1:</strong> ${data.detail.h1}</li>
+            <li><strong>Gambar dengan alt:</strong> ${data.detail.imageAltRatio}</li>
+          </ul>
+        `;
+      } catch (err) {
+        resultDiv.innerHTML = '<p style="color:red;">Gagal menghubungi server</p>';
+      }
+    }
+
+    // Fungsi untuk escape karakter HTML agar aman ditampilkan
+    function escapeHTML(text) {
+      const p = document.createElement('p');
+      p.textContent = text;
+      return p.innerHTML;
+    }
+  </script>
+</body>
+</html>
