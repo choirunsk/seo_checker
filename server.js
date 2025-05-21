@@ -5,7 +5,7 @@ const cors = require('cors');
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '5mb' })); // supaya bisa terima html besar
+app.use(express.json({ limit: '5mb' })); 
 
 function analyzeHTML(html) {
   const dom = new JSDOM(html);
